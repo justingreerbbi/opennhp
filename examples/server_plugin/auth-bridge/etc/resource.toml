@@ -1,0 +1,12 @@
+# Resource IDs must exactly match config.toml bindings. No SkipAuth bypass.
+[existing-api]
+SkipAuth = false
+OpenTime = 60
+
+[existing-api.Resources.api]
+ACId = "existing-api-ac"
+Hostname = "domain.com"
+Addr.Ip = "192.0.2.10" # Replace with the API destination visible to the AC.
+Addr.Port = 443
+Addr.Protocol = "tcp"
+PortSuffix = false

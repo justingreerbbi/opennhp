@@ -1,0 +1,115 @@
+# V1 TESTING ONLY. Challenge/verifier binding is omitted in this alpha.
+# It MUST be implemented and verified before any stable project tag.
+# Backend code expiry/single-use enforcement is REQUIRED even for testing.
+# Administrator-owned configuration; restart nhp-server after changes.
+version = 1
+
+# The app may select only these operations using usrData.operation.
+# Omit default_operation to require an explicit operation on every knock.
+[bindings.existing-api]
+default_operation = "login"
+[bindings.existing-api.operations]
+login = "application-login"
+renew = "application-renew"
+
+[backends.application-login]
+url = "https://domain.com/nhp/authorize"
+method = "POST"
+encoding = "json" # json, form (URL-encoded), or none
+allow_http = false # Local testing only; TLS verification cannot be disabled.
+timeout_ms = 3000
+max_response_bytes = 8192
+max_concurrent = 32
+
+[backends.application-login.headers]
+Accept = "application/json"
+# Optional server-to-server credential; restrict file permissions if configured.
+# Authorization = "Bearer replace-with-server-credential"
+
+# Exactly one source or static value per mapping; unmapped inputs are ignored.
+# Sources: userdata.<dot.path>, user_id, device_id, organization_id.
+# Locations: body, query, header. Types: string, number, bool (no coercion).
+# JSON targets support nested dot paths; form/query/header names are literal.
+[[backends.application-login.fields]]
+source = "userdata.username"
+target = "username"
+location = "body"
+type = "string"
+required = true
+max_bytes = 320
+
+[[backends.application-login.fields]]
+source = "userdata.password"
+target = "password"
+location = "body"
+type = "string"
+required = true
+max_bytes = 1024
+
+[[backends.application-login.fields]]
+source = "userdata.device.platform"
+target = "client.platform"
+location = "body"
+type = "string"
+required = false
+max_bytes = 64
+
+# Authorize this resource specifically; do not trust a client-supplied resource.
+[[backends.application-login.fields]]
+value = "existing-api"
+target = "resource"
+location = "body"
+type = "string"
+max_bytes = 64
+
+[backends.application-login.success]
+statuses = [200]
+path = "authorized"
+equals = true
+
+# Response example: {"authorized":true,"code":"<43 base64url characters>","expires_in":30}
+# Only code is returned in aspToken AFTER AC success. Nothing else is forwarded.
+# The code is opaque, 32..max_bytes ASCII base64url characters (no JSON/JWT).
+[backends.application-login.code]
+path = "code"
+expires_in_path = "expires_in"
+max_bytes = 128 # Hard ceiling 256; default 128.
+max_ttl_seconds = 30 # Hard ceiling 60; default 30.
+
+[backends.application-renew]
+url = "https://domain.com/nhp/renew"
+method = "POST"
+encoding = "json"
+allow_http = false
+timeout_ms = 3000
+max_response_bytes = 8192
+max_concurrent = 32
+
+[backends.application-renew.headers]
+Accept = "application/json"
+
+[[backends.application-renew.fields]]
+source = "userdata.refresh_token"
+target = "refresh_token"
+location = "body"
+type = "string"
+required = true
+max_bytes = 4096
+
+[[backends.application-renew.fields]]
+value = "existing-api"
+target = "resource"
+location = "body"
+type = "string"
+max_bytes = 64
+
+[backends.application-renew.success]
+statuses = [200]
+path = "authorized"
+equals = true
+
+[backends.application-renew.code]
+path = "code"
+expires_in_path = "expires_in"
+max_bytes = 128
+max_ttl_seconds = 30
