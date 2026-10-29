@@ -293,6 +293,57 @@ func TestHeaderInjection(t *testing.T) {
 	}
 }
 
+const getBackendConfig = `version = 1
+%s
+[bindings.res]
+default_operation = "check"
+[bindings.res.operations]
+check = "b"
+[backends.b]
+url = "https://domain.com/check"
+method = "GET"
+encoding = "none"
+[backends.b.success]
+statuses = [200]
+[backends.b.code]
+path = "code"
+expires_in_path = "ttl"
+`
+
+func TestGETBlockedByDefault(t *testing.T) {
+	// Policy absent and an explicit false both block a GET backend.
+	for _, policy := range []string{"", "allow_get = false"} {
+		if _, err := parseConfig([]byte(strings.Replace(getBackendConfig, "%s", policy, 1))); err == nil {
+			t.Fatalf("GET accepted with policy %q", policy)
+		}
+	}
+	// The opt-in policy permits the GET backend.
+	if _, err := parseConfig([]byte(strings.Replace(getBackendConfig, "%s", "allow_get = true", 1))); err != nil {
+		t.Fatalf("allow_get = true rejected a GET backend: %v", err)
+	}
+}
+
+func TestGETSendsNoBody(t *testing.T) {
+	b := Backend{URL: "https://example.com/check", Method: "GET", Encoding: "json", Fields: []Field{
+		{Source: "user_id", Target: "uid", Location: "query", Type: "string", MaxBytes: 100},
+	}}
+	req, err := buildRequest(context.Background(), b, &common.AgentKnockMsg{UserId: "alice"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if req.URL.Query().Get("uid") != "alice" {
+		t.Fatal("query mapping lost")
+	}
+	if req.Header.Get("Content-Type") != "" {
+		t.Fatal("GET carried a Content-Type")
+	}
+	if req.Body != nil && req.Body != http.NoBody {
+		if raw, _ := io.ReadAll(req.Body); len(raw) != 0 {
+			t.Fatalf("GET carried a body: %q", raw)
+		}
+	}
+}
+
 func TestOperationRouting(t *testing.T) {
 	var calls atomic.Int32
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

@@ -166,7 +166,11 @@ func AuthWithNHP(req *common.NhpAuthRequest, helper *plugins.NhpServerPluginHelp
 	if err != nil || ctx.Err() != nil {
 		return deny(req)
 	}
-	// Do not mutate shared resource configuration or trust client-provided resource metadata.
+	// Work on a copy so the per-request AuthServiceId override never touches the
+	// shared config, and never trust client-provided resource metadata. This is
+	// a shallow copy: res.Resources and res.ExInfo stay shared, which is safe
+	// only because the AC callback reads them and never writes. Deep-copy here
+	// if that assumption ever changes.
 	resource := *res
 	resource.AuthServiceId = req.Msg.AuthServiceId
 	req.Ack.OpenTime = resource.OpenTime

@@ -60,7 +60,12 @@ func typed(v any, kind string) (any, string, error) {
 	return nil, "", fmt.Errorf("unexpected field type")
 }
 func buildRequest(ctx context.Context, b Backend, msg *common.AgentKnockMsg) (*http.Request, error) {
-	u, _ := url.Parse(b.URL)
+	u, err := url.Parse(b.URL)
+	if err != nil {
+		// parseConfig already validated every backend URL; re-check so a future
+		// caller cannot reach http.NewRequestWithContext with a nil *url.URL.
+		return nil, fmt.Errorf("cannot construct authentication request")
+	}
 	q := u.Query()
 	form := url.Values{}
 	body := map[string]any{}
@@ -113,13 +118,18 @@ func buildRequest(ctx context.Context, b Backend, msg *common.AgentKnockMsg) (*h
 		}
 	}
 	var payload []byte
-	if b.Encoding == "json" {
-		payload, _ = json.Marshal(body)
-		headers.Set("Content-Type", "application/json")
-	}
-	if b.Encoding == "form" {
-		payload = []byte(form.Encode())
-		headers.Set("Content-Type", "application/x-www-form-urlencoded")
+	// A GET carries no request body: body-location fields are rejected for GET
+	// at config time, so there is nothing to encode, and sending an empty "{}"
+	// body plus a Content-Type on a GET only trips up strict backends.
+	if b.Method != "GET" {
+		if b.Encoding == "json" {
+			payload, _ = json.Marshal(body)
+			headers.Set("Content-Type", "application/json")
+		}
+		if b.Encoding == "form" {
+			payload = []byte(form.Encode())
+			headers.Set("Content-Type", "application/x-www-form-urlencoded")
+		}
 	}
 	u.RawQuery = q.Encode()
 	req, err := http.NewRequestWithContext(ctx, b.Method, u.String(), bytes.NewReader(payload))
@@ -175,6 +185,9 @@ func authenticate(ctx context.Context, client *http.Client, b Backend, msg *comm
 			return "", fmt.Errorf("invalid exchange code")
 		}
 	}
+	// The code lifetime is validated only as a sanity gate: reject a backend
+	// that hands back a long-lived credential. It is not propagated anywhere;
+	// the access window comes from the resource's OpenTime, not this value.
 	expiry, ok := lookup(data, b.Code.ExpiresInPath)
 	seconds, isNumber := expiry.(float64)
 	if !ok || !isNumber || seconds < 1 || seconds > float64(b.Code.MaxTTLSeconds) || seconds != float64(int(seconds)) {

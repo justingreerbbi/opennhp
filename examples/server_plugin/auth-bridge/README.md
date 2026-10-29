@@ -147,6 +147,11 @@ and environment proxies are disabled. `allow_http = true` is for local tests
 only. URL userinfo, fragments and inline query strings are rejected; configure
 query values through mappings instead.
 
+The top-level `allow_get` policy defaults to `false`, which blocks any backend
+whose `method` is `GET`. Set it to `true` to permit GET deliberately; when GET is
+permitted, a GET request is sent with no body and no `Content-Type`, since
+body-location fields are not allowed on GET.
+
 `success.statuses` must explicitly list accepted 2xx codes. If `path` and
 `equals` are present, the JSON value must match too (`true` differs from
 `"true"`). The backend must authorize the bound resource, not merely recognize

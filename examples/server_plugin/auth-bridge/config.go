@@ -11,7 +11,11 @@ import (
 )
 
 type Config struct {
-	Version  int                `toml:"version"`
+	Version int `toml:"version"`
+	// AllowGET must be set true for a backend to use method GET. The default
+	// (false) blocks GET, so an administrator opts in deliberately rather than
+	// reaching for a method that cannot carry a request body.
+	AllowGET bool               `toml:"allow_get"`
 	Backends map[string]Backend `toml:"backends"`
 	Bindings map[string]Binding `toml:"bindings"`
 }
@@ -77,6 +81,9 @@ func parseConfig(data []byte) (*Config, error) {
 		case "GET", "POST", "PUT", "PATCH", "DELETE":
 		default:
 			return nil, fmt.Errorf("backend %s: unsupported method", name)
+		}
+		if b.Method == "GET" && !c.AllowGET {
+			return nil, fmt.Errorf("backend %s: GET is blocked by default; set allow_get = true to permit it", name)
 		}
 		if b.Encoding != "json" && b.Encoding != "form" && b.Encoding != "none" {
 			return nil, fmt.Errorf("backend %s: invalid encoding", name)

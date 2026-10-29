@@ -4,6 +4,11 @@
 # Administrator-owned configuration; restart nhp-server after changes.
 version = 1
 
+# Optional policy. GET is blocked by default; set this to true to permit
+# backends configured with method GET. Leaving it unset keeps GET refused, so
+# credential-bearing backends stay on methods that carry a request body.
+# allow_get = true
+
 # The app may select only these operations using usrData.operation.
 # Omit default_operation to require an explicit operation on every knock.
 [bindings.existing-api]
