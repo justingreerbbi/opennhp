@@ -2,7 +2,7 @@
 layout: page
 title: "Features"
 nav_order: 2
-parent: Overview
+parent: OpenNHP Overview
 permalink: /features/
 ---
 

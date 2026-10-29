@@ -2,7 +2,7 @@
 layout: page
 title: "Comparison: NHP and SPA"
 nav_order: 3
-parent: Overview
+parent: OpenNHP Overview
 permalink: /comparison/
 ---
 
