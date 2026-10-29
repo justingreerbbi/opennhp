@@ -1,7 +1,8 @@
 ---
 layout: page
-title: Comparison
-nav_order: 5
+title: "Comparison: NHP and SPA"
+nav_order: 3
+parent: Overview
 permalink: /comparison/
 ---
 

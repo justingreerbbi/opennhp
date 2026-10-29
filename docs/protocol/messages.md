@@ -2,6 +2,7 @@
 layout: page
 title: Message Types
 parent: Protocol Reference
+grand_parent: Technical Reference
 nav_order: 2
 permalink: /protocol/messages/
 description: Complete reference of the NHP and DHP message types, their direction, and their payload shape.

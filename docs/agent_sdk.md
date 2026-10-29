@@ -1,7 +1,8 @@
 ---
 layout: page
-title: Client SDKs
-nav_order: 10
+title: "Client SDKs"
+nav_order: 3
+parent: Development
 permalink: /agent_sdk/
 ---
 

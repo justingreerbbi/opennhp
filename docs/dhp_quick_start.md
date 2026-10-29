@@ -1,7 +1,8 @@
 ---
-title: DHP Quick Start
+title: "DHP Quick Start"
 layout: page
 nav_order: 3
+parent: Getting Started
 permalink: /dhp_quick_start/
 ---
 

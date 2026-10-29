@@ -1,7 +1,8 @@
 ---
 layout: page
-title: Understand the Code
-nav_order: 8
+title: "Understand the Source Code"
+nav_order: 2
+parent: Development
 permalink: /code/
 ---
 

@@ -1,7 +1,8 @@
 ---
 layout: page
-title: Cryptography
-nav_order: 4
+title: "Cryptography"
+nav_order: 1
+parent: Technical Reference
 permalink: /cryptography/
 ---
 

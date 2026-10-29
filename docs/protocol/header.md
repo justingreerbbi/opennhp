@@ -2,6 +2,7 @@
 layout: page
 title: Message Header
 parent: Protocol Reference
+grand_parent: Technical Reference
 nav_order: 1
 permalink: /protocol/header/
 description: Byte layout and field semantics of the fixed NHP message header.

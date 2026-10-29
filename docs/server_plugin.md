@@ -1,7 +1,8 @@
 ---
 layout: page
-title: Server Plugins
-nav_order: 9
+title: "Server Plugin Development"
+nav_order: 4
+parent: Development
 permalink: /server_plugin/
 ---
 

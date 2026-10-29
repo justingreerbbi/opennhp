@@ -1,7 +1,8 @@
 ---
 layout: page
-title: Features
-nav_order: 3
+title: "Features"
+nav_order: 2
+parent: Overview
 permalink: /features/
 ---
 

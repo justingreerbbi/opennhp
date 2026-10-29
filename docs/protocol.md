@@ -1,7 +1,8 @@
 ---
 layout: page
-title: Protocol Reference
-nav_order: 11
+title: "Protocol Reference"
+nav_order: 2
+parent: Technical Reference
 has_children: true
 permalink: /protocol/
 description: OpenNHP wire-format reference. Maps the CSA NHP specification to the Go implementation.

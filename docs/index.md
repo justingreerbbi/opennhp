@@ -1,7 +1,8 @@
 ---
-title: Overview
+title: "OpenNHP Overview"
 layout: home
 nav_order: 1
+parent: Overview
 description: "OpenNHP: Zero Trust Network-infrastructure Hiding Protocol"
 permalink: /
 ---

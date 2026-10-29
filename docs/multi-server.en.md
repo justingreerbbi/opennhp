@@ -1,3 +1,10 @@
+---
+layout: page
+title: Multi-Instance Server Clusters
+parent: Deployment
+nav_order: 2
+---
+
 # Multi-Instance nhp-server Clusters: Agent / AC / Relay Implementation
 
 > Branch: `feat/phase2-multi-instance-peers`

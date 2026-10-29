@@ -1,7 +1,8 @@
 ---
 layout: page
-title: Glossary
-nav_order: 12
+title: "Glossary"
+nav_order: 4
+parent: Overview
 permalink: /glossary/
 description: Canonical terminology used across OpenNHP and the CSA NHP specification.
 ---

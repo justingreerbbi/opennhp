@@ -1,7 +1,8 @@
 ---
 layout: page
-title: Capture Diagram Animations
-nav_order: 10
+title: "Capture Diagram Animations"
+nav_order: 5
+parent: Development
 permalink: /capture-diagrams/
 ---
 

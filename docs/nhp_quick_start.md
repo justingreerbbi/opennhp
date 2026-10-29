@@ -1,7 +1,8 @@
 ---
-title: NHP Quick Start
+title: "NHP Quick Start Docker"
 layout: page
-nav_order: 2
+nav_order: 1
+parent: Getting Started
 permalink: /nhp_quick_start/
 ---
 

@@ -1,7 +1,8 @@
 ---
 layout: page
-title: How to Deploy
-nav_order: 6
+title: "Deploy OpenNHP Binaries"
+nav_order: 1
+parent: Deployment
 permalink: /deploy/
 ---
 

@@ -1,7 +1,8 @@
 ---
 layout: page
-title: How to Build
-nav_order: 7
+title: "Build from Source"
+nav_order: 1
+parent: Development
 permalink: /build/
 ---
 
