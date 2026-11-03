@@ -63,15 +63,17 @@ func nhp_agent_init(workingDir *C.char, logLevel C.int) bool {
 	return true
 }
 
-// nhp_agent_init_with_key starts the agent without reading PrivateKeyBase64
-// from etc/config.toml. privateKey is the base64 agent private key. cipherType
-// is 0 for Curve25519 and 1 for SM2. The caller must not log privateKey.
+// nhp_agent_init_with_key starts the agent in memory config mode with
+// privateKey, the base64 agent private key held by the platform secure store.
+// cipherType is 0 for Curve25519 and 1 for SM2. The caller must not log
+// privateKey. Nothing in workingDir/etc is read and no config watcher is armed,
+// so no config.toml can replace the key, scheme or identity; workingDir holds
+// only the logs. Add servers with nhp_agent_add_server and resources with
+// nhp_agent_add_resource, and set the identity with nhp_agent_set_knock_user.
 //
 // If an agent is already initialized, this returns true only when that agent
 // already holds exactly this key and cipher scheme; otherwise it returns false
-// (the agent is never silently re-keyed — close it first). Note: Start installs
-// a config.toml watcher, so editing etc/config.toml later can reset the cipher
-// scheme and knock user of an agent started this way.
+// (the agent is never silently re-keyed — close it first).
 //
 //export nhp_agent_init_with_key
 func nhp_agent_init_with_key(workingDir *C.char, logLevel C.int, privateKey *C.char, cipherType C.int) bool {
@@ -85,18 +87,10 @@ func nhp_agent_init_with_key(workingDir *C.char, logLevel C.int, privateKey *C.c
 		// with the wrong identity and no error.
 		return agent.AgentHoldsRegistrationKey(gAgentInstance, key, int(cipherType))
 	}
-	instance, err := agent.StartAllowingMissingConfig(deepCopyCString(workingDir), int(logLevel))
+	// Start installs the key itself (UseInMemoryConfig), so the agent is fully
+	// keyed before it is published as gAgentInstance.
+	instance, err := agent.StartWithKey(deepCopyCString(workingDir), int(logLevel), key, int(cipherType))
 	if err != nil {
-		return false
-	}
-	// Install the key on the local instance BEFORE publishing it as
-	// gAgentInstance. ReinitWithKey swaps a.device without a lock and is only
-	// safe while senders are idle, so no other SDK entry point may observe this
-	// agent until both Start and the rekey have succeeded (mirrors PR 1806 for
-	// nhp_agent_init). On failure nothing was ever published, so there is no
-	// gAgentInstance to clear and no concurrent caller left on a stopped agent.
-	if err := agent.InstallRegistrationKey(instance, key, int(cipherType)); err != nil {
-		instance.Stop()
 		return false
 	}
 	gAgentInstance = instance
@@ -473,43 +467,28 @@ func registrationJSON(result agent.RegistrationResult) *C.char {
 	return C.CString(result.JSON())
 }
 
-// Request a one-time password so this device key can be registered.
-// The server emails the code to email. privateKey may be empty to generate a
-// new key when no agent is running. A running agent is not re-keyed.
+// Request a one-time password so the initialized agent's key can be registered.
+// The server emails the code to email. Call nhp_agent_init_with_key and
+// nhp_agent_add_server first; cluster is that server's public key. The agent's
+// knock identity is unchanged afterwards.
 // The caller must free the returned string with nhp_free_cstring.
 //
 //export nhp_agent_request_otp
-func nhp_agent_request_otp(workingDir *C.char, logLevel C.int, privateKey *C.char, cipherType C.int, email *C.char, deviceId *C.char, orgId *C.char, userData *C.char, aspId *C.char, resId *C.char, cluster *C.char) *C.char {
+func nhp_agent_request_otp(email *C.char, deviceId *C.char, orgId *C.char, userData *C.char, aspId *C.char, resId *C.char, cluster *C.char) *C.char {
 	return registrationJSON(agent.RequestRegistrationOtp(
-		gAgentInstance, deepCopyCString(workingDir), int(logLevel), deepCopyCString(privateKey), int(cipherType),
-		deepCopyCString(email), deepCopyCString(deviceId), deepCopyCString(orgId), deepCopyCString(userData),
+		gAgentInstance, deepCopyCString(email), deepCopyCString(deviceId), deepCopyCString(orgId), deepCopyCString(userData),
 		deepCopyCString(aspId), deepCopyCString(resId), deepCopyCString(cluster),
 	))
 }
 
-// Register the device public key with the one-time password from nhp_agent_request_otp.
-// Pass the same privateKey that request returned. An empty privateKey is rejected
-// when no running agent already holds that key. A running agent is not re-keyed.
+// Register the initialized agent's public key with the one-time password from
+// nhp_agent_request_otp. Pass the same email, aspId, resId and cluster.
 // The caller must free the returned string with nhp_free_cstring.
 //
 //export nhp_agent_register
-func nhp_agent_register(workingDir *C.char, logLevel C.int, privateKey *C.char, cipherType C.int, email *C.char, deviceId *C.char, orgId *C.char, userData *C.char, aspId *C.char, resId *C.char, cluster *C.char, otp *C.char) *C.char {
+func nhp_agent_register(email *C.char, deviceId *C.char, orgId *C.char, userData *C.char, aspId *C.char, resId *C.char, cluster *C.char, otp *C.char) *C.char {
 	return registrationJSON(agent.RegisterDevice(
-		gAgentInstance, deepCopyCString(workingDir), int(logLevel), deepCopyCString(privateKey), int(cipherType),
-		deepCopyCString(email), deepCopyCString(deviceId), deepCopyCString(orgId), deepCopyCString(userData),
+		gAgentInstance, deepCopyCString(email), deepCopyCString(deviceId), deepCopyCString(orgId), deepCopyCString(userData),
 		deepCopyCString(aspId), deepCopyCString(resId), deepCopyCString(cluster), deepCopyCString(otp),
 	))
-}
-
-// nhp_agent_take_generated_key returns the base64 private key generated by the
-// most recent nhp_agent_request_otp and clears it, so the secret is surrendered
-// exactly once and never travels in the registration JSON. It returns "" when
-// the caller supplied the key or none was generated. The caller MUST call this
-// right after a successful nhp_agent_request_otp, free the returned string with
-// nhp_free_cstring, and write it straight into secure storage: an uncollected
-// key stays in process memory until the next nhp_agent_request_otp overwrites it.
-//
-//export nhp_agent_take_generated_key
-func nhp_agent_take_generated_key() *C.char {
-	return C.CString(agent.TakeGeneratedKey())
 }
